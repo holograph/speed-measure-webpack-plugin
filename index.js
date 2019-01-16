@@ -87,9 +87,11 @@ module.exports = class SpeedMeasurePlugin {
     if (!tED[category][event]) tED[category][event] = [];
     const eventList = tED[category][event];
     const curTime = new Date().getTime();
+    const curHeap = process.memoryUsage().heapUsed;
 
     if (eventType === "start") {
       data.start = curTime;
+      data.startHeap = curHeap;
       eventList.push(data);
     } else if (eventType === "end") {
       const matchingEvent = eventList.find(e => {
@@ -113,6 +115,7 @@ module.exports = class SpeedMeasurePlugin {
       }
 
       eventToModify.end = curTime;
+      eventToModify.endHeap = curHeap;
     }
   }
 

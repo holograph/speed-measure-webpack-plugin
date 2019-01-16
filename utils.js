@@ -5,7 +5,7 @@ const isEqual = (x, y) =>
       y.every(yi => x.includes(yi))
     : x === y;
 
-const mergeRanges = rangeList => {
+const mergeTimeRanges = rangeList => {
   const mergedQueue = [];
   const inputQueue = [...rangeList];
   while (inputQueue.length) {
@@ -80,8 +80,12 @@ module.exports.getAverages = group => {
 };
 
 module.exports.getTotalActiveTime = group => {
-  const mergedRanges = mergeRanges(group);
+  const mergedRanges = mergeTimeRanges(group);
   return mergedRanges.reduce((acc, range) => acc + range.end - range.start, 0);
+};
+
+module.exports.getHeapUsageDelta = group => {
+  return group.reduce((acc, range) => acc + range.end - range.start, 0);
 };
 
 const prependLoader = rules => {

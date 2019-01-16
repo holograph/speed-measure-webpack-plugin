@@ -3,7 +3,7 @@ const MS_IN_SECOND = 1000;
 
 const chalk = require("chalk");
 const { fg, bg } = require("./colours");
-const { groupBy, getAverages, getTotalActiveTime } = require("./utils");
+const { groupBy, getAverages, getTotalActiveTime, getHeapUsageDelta } = require("./utils");
 
 const humanTime = (ms, options = {}) => {
   if (options.verbose) {
@@ -54,8 +54,13 @@ module.exports.getHumanOutput = (outputObj, options = {}) => {
         output +=
           chalk.bold(pluginName) +
           " took " +
-          fg(hT(outputObj.plugins[pluginName]), outputObj.plugins[pluginName]);
-        output += "\n";
+          fg(hT(outputObj.plugins[pluginName].time), outputObj.plugins[pluginName].time) +
+          "\n";
+        output +=
+          chalk.bold(pluginName) +
+          " increased heap utilization by " +
+          (outputObj.plugins[pluginName].heap / 1024).toFixed() +
+          "KB\n";
       });
     output += "\n";
   }
@@ -121,8 +126,14 @@ module.exports.getPluginsOutput = data =>
     const startEndsByName = groupBy("name", inData);
 
     return startEndsByName.reduce((innerAcc, startEnds) => {
-      innerAcc[startEnds[0].name] =
-        (innerAcc[startEnds[0].name] || 0) + getTotalActiveTime(startEnds);
+      const baseline = innerAcc[startEnds[0].name] || {
+        time: 0,
+        heap: 0,
+      };
+      innerAcc[startEnds[0].name] = {
+        time: baseline.time + getTotalActiveTime(startEnds),
+        heap: baseline.heap + getHeapUsageDelta(startEnds),
+      };
       return innerAcc;
     }, acc);
   }, {});
