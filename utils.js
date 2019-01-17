@@ -84,8 +84,10 @@ module.exports.getTotalActiveTime = group => {
   return mergedRanges.reduce((acc, range) => acc + range.end - range.start, 0);
 };
 
-module.exports.getHeapUsageDelta = group => {
-  return group.reduce((acc, range) => acc + range.end - range.start, 0);
+module.exports.getMaxHeapDelta = group => {
+  const minHeap = group.reduce((acc, cur) => Math.min(acc, cur.startHeap), Number.MAX_VALUE);
+  const maxHeap = group.reduce((acc, cur) => Math.max(acc, cur.endHeap), 0);
+  return maxHeap - minHeap;
 };
 
 const prependLoader = rules => {

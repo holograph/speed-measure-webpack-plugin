@@ -3,7 +3,7 @@ const MS_IN_SECOND = 1000;
 
 const chalk = require("chalk");
 const { fg, bg } = require("./colours");
-const { groupBy, getAverages, getTotalActiveTime, getHeapUsageDelta } = require("./utils");
+const { groupBy, getAverages, getTotalActiveTime, getMaxHeapDelta } = require("./utils");
 
 const humanTime = (ms, options = {}) => {
   if (options.verbose) {
@@ -73,7 +73,9 @@ module.exports.getHumanOutput = (outputObj, options = {}) => {
           loaderObj.loaders.map(fg).join(", and \n") +
           " took " +
           fg(hT(loaderObj.activeTime), loaderObj.activeTime) +
-          "\n";
+          " utilizing " +
+          (loaderObj.totalHeapUtilization / 1024).toFixed() +
+          "KB\n";
 
         let xEqualsY = [];
         if (options.verbose) {
@@ -92,8 +94,9 @@ module.exports.getHumanOutput = (outputObj, options = {}) => {
         }
 
         if (loaderObj.loaders.length > 1) {
-          Object.keys(loaderObj.subLoadersTime).forEach(subLoader => {
-            xEqualsY.push([subLoader, hT(loaderObj.subLoadersTime[subLoader])]);
+          Object.keys(loaderObj.subLoaderStats).forEach(subLoader => {
+            xEqualsY.push([subLoader, hT(loaderObj.subLoaderStats[subLoader].time)]);
+            xEqualsY.push([subLoader, (loaderObj.subLoaderStats[subLoader].heap / 1024).toFixed() + "KB"]);
           });
         }
 
@@ -132,7 +135,7 @@ module.exports.getPluginsOutput = data =>
       };
       innerAcc[startEnds[0].name] = {
         time: baseline.time + getTotalActiveTime(startEnds),
-        heap: baseline.heap + getHeapUsageDelta(startEnds),
+        heap: baseline.heap + getMaxHeapDelta(startEnds),
       };
       return innerAcc;
     }, acc);
@@ -145,12 +148,14 @@ module.exports.getLoadersOutput = data => {
   const buildData = startEndsByLoader.map(startEnds => {
     const averages = getAverages(startEnds);
     const activeTime = getTotalActiveTime(startEnds);
+    const heapUtilization = getMaxHeapDelta(startEnds);
     const subLoaders = groupBy(
       "loader",
       allSubLoaders.filter(l => startEnds.find(x => x.name === l.name))
     );
-    const subLoadersActiveTime = subLoaders.reduce((acc, loaders) => {
-      acc[loaders[0].loader] = getTotalActiveTime(loaders);
+    const subLoaderStats = subLoaders.reduce((acc, loaders) => {
+      acc[loaders[0].loader].time = getTotalActiveTime(loaders);
+      acc[loaders[0].loader].heap = getMaxHeapDelta(loaders);
       return acc;
     }, {});
 
@@ -158,7 +163,8 @@ module.exports.getLoadersOutput = data => {
       averages,
       activeTime,
       loaders: startEnds[0].loaders,
-      subLoadersTime: subLoadersActiveTime,
+      subLoaderStats: subLoaderStats,
+      totalHeapUtilization: heapUtilization,
     };
   });
 

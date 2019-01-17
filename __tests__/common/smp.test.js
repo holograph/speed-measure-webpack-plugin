@@ -90,9 +90,9 @@ describe("smp", () => {
       );
     });
 
-    it("should state the time taken by the loaders", () => {
+    it("should state the time, heap and module count taken by the loaders", () => {
       expect(testRef.smpOutput).toMatch(
-        /babel-loader.* took .*([0-9]+ mins? )?[0-9]+(\.[0-9]+)? secs.*\n\s+module count\s+= [0-9]+/
+        /babel-loader.* took .*([0-9]+ mins? )?[0-9]+(\.[0-9]+)? secs.*utilizing [0-9]+KB\n\s+module count\s+= [0-9]+/
       );
     });
 
